@@ -131,27 +131,3 @@
 架构设计：
 
 ![](https://pic.yupi.icu/1/AI%E5%BA%94%E7%94%A8%E7%94%9F%E6%88%90%E5%B9%B3%E5%8F%B0%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
-
-
-## 第一期免费看
-
-第一期是公开讲解，给大家介绍项目背景、项目功能、技术选型、架构设计、教程计划等。
-
-视频地址：[https://www.bilibili.com/video/BV1Eq5DzcE9o](https://www.bilibili.com/video/BV1XsbSznEs4/)
-​	
-
-## 加入项目学习
-
-编程导航已有 **近 20 套项目教程**！每个项目的学习重点不同，几乎全都是前端 + 后端的 **全栈** 项目 。
-
-![](https://pic.yupi.icu/1/wechat_2025-07-24_115207_359.png)
-
-欢迎加入 [编程导航](https://mp.weixin.qq.com/s/I1oD6pAaWBvGLyFDT9AgvA?token=1925632390&lang=zh_CN)，加入后不仅可以全程跟学本项目，往期 [10+ 套原创项目教程](https://mp.weixin.qq.com/s/omIazLMQlTo9M3jFFH7NzQ?token=70787607&lang=zh_CN) 也都可以无限回看。还能享受更多原创技术资料、学习和求职指导、上百场面试回放视频，开启你的编程起飞之旅~
-
-🧧 助力新项目学习，给大家发放 **限时编程导航优惠券**，扫码即可领券加入。加入三天内不满意可全额退款，欢迎加入体验，名额有限，速来学习！
-
-<img width="404" alt="image" src="https://github.com/user-attachments/assets/56411098-b60e-4267-8ba2-4ebc5d416afc" />
-
-1 天不到 1 块钱，绝对是对自己最值的投资！成为编程导航会员后，可以解锁 10 多套项目的教程和资料，PC 网站和 APP 都可以学习，如图：
-
-![](https://pic.yupi.icu/1/image-20250120113756426-20250422160856746.png)
