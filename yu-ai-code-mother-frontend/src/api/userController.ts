@@ -125,3 +125,18 @@ export async function updateUser(body: API.UserUpdateRequest, options?: { [key: 
     ...(options || {}),
   })
 }
+
+/** 管理员调整用户生成额度 POST /user/admin/quota */
+export async function updateUserQuota(
+  body: API.UserQuotaUpdateRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/user/admin/quota', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}

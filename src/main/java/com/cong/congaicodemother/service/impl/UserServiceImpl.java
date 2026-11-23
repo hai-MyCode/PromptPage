@@ -7,6 +7,8 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.cong.congaicodemother.exception.BusinessException;
 import com.cong.congaicodemother.exception.ErrorCode;
+import com.cong.congaicodemother.exception.ThrowUtils;
+import com.cong.congaicodemother.constant.UserConstant;
 import com.cong.congaicodemother.model.dto.user.UserQueryRequest;
 import com.cong.congaicodemother.model.entity.User;
 import com.cong.congaicodemother.mapper.UserMapper;
@@ -62,6 +64,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setUserPassword(encryptPassword);
         user.setUserName("无名");
         user.setUserRole(UserRoleEnum.USER.getValue());
+        // 新用户赠送默认额度
+        user.setQuota(UserConstant.DEFAULT_QUOTA);
         boolean saveResult = this.save(user);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "注册失败，数据库错误");
@@ -182,5 +186,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 盐值，混淆密码
         final String SALT = "yupi";
         return DigestUtils.md5DigestAsHex((userPassword + SALT).getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public boolean tryDeductQuota(Long userId) {
+        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR, "用户 id 错误");
+        // 数据库原子扣减：quota > 0 才会更新成功，避免并发超发
+        return this.mapper.deductQuota(userId) > 0;
+    }
+
+    @Override
+    public void refundQuota(Long userId) {
+        if (userId == null || userId <= 0) {
+            return;
+        }
+        this.mapper.refundQuota(userId);
+    }
+
+    @Override
+    public boolean updateQuota(Long userId, Integer quota) {
+        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR, "用户 id 错误");
+        ThrowUtils.throwIf(quota == null || quota < 0, ErrorCode.PARAMS_ERROR, "额度不能为负数");
+        User user = new User();
+        user.setId(userId);
+        user.setQuota(quota);
+        return this.updateById(user);
     }
 }

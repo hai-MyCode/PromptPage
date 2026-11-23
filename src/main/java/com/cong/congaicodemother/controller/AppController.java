@@ -67,7 +67,13 @@ public class AppController {
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
         // 调用服务生成代码（SSE 流式返回）
-        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+        Flux<String> contentFlux;
+        try {
+            contentFlux = appService.chatToGenCode(appId, message, loginUser);
+        } catch (BusinessException e) {
+            // 额度不足、无权限等业务异常，转成 SSE 事件返回，让前端能展示具体原因
+            return Flux.just(buildBusinessErrorEvent(e.getCode(), e.getMessage()));
+        }
         return contentFlux
                 .map(chunk -> {
                     Map<String, String> wrapper = Map.of("d", chunk);
@@ -76,6 +82,8 @@ public class AppController {
                             .data(jsonData)
                             .build();
                 })
+                .onErrorResume(error -> Flux.just(buildBusinessErrorEvent(
+                        ErrorCode.SYSTEM_ERROR.getCode(), "生成失败：" + error.getMessage())))
                 .concatWith(Mono.just(
                         // 发送结束事件
                         ServerSentEvent.<String>builder()
@@ -83,6 +91,18 @@ public class AppController {
                                 .data("")
                                 .build()
                 ));
+    }
+
+    /**
+     * 构造 SSE 业务错误事件（前端监听 business-error 事件展示提示）
+     */
+    private ServerSentEvent<String> buildBusinessErrorEvent(int code, String message) {
+        String safeMessage = StrUtil.isBlank(message) ? "生成失败，请稍后重试" : message;
+        Map<String, Object> data = Map.of("code", code, "message", safeMessage);
+        return ServerSentEvent.<String>builder()
+                .event("business-error")
+                .data(JSONUtil.toJsonStr(data))
+                .build();
     }
 
     /**

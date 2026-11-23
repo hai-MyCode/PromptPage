@@ -533,11 +533,13 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
       setTimeout(async () => {
         await fetchAppInfo()
         updatePreview()
+        // 刷新登录用户信息，同步最新剩余额度
+        await loginUserStore.fetchLoginUser()
       }, 1000)
     })
 
     // 处理business-error事件（后端限流等错误）
-    eventSource.addEventListener('business-error', function (event: MessageEvent) {
+    eventSource.addEventListener('business-error', async function (event: MessageEvent) {
       if (streamCompleted) return
 
       try {
@@ -553,6 +555,8 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
         streamCompleted = true
         isGenerating.value = false
         eventSource?.close()
+        // 生成失败时后端会退回额度，这里同步刷新
+        await loginUserStore.fetchLoginUser()
       } catch (parseError) {
         console.error('解析错误事件失败:', parseError, '原始数据:', event.data)
         handleError(new Error('服务器返回错误'), aiMessageIndex)

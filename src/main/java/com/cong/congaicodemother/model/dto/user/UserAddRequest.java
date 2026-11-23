@@ -35,5 +35,10 @@ public class UserAddRequest implements Serializable {
      */
     private String userRole;
 
+    /**
+     * 剩余生成额度（次数），不传时使用默认额度
+     */
+    private Integer quota;
+
     private static final long serialVersionUID = 1L;
 }

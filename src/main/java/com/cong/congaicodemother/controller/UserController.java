@@ -97,6 +97,10 @@ public class UserController {
         ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);
         User user = new User();
         BeanUtil.copyProperties(userAddRequest, user);
+        // 未指定额度时使用默认额度
+        if (user.getQuota() == null) {
+            user.setQuota(UserConstant.DEFAULT_QUOTA);
+        }
         // 默认密码 12345678
         final String DEFAULT_PASSWORD = "12345678";
         String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
@@ -154,6 +158,19 @@ public class UserController {
         BeanUtil.copyProperties(userUpdateRequest, user);
         boolean result = userService.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 管理员调整用户生成额度
+     */
+    @PostMapping("/admin/quota")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> updateUserQuota(@RequestBody UserQuotaUpdateRequest userQuotaUpdateRequest) {
+        ThrowUtils.throwIf(userQuotaUpdateRequest == null || userQuotaUpdateRequest.getId() == null,
+                ErrorCode.PARAMS_ERROR);
+        boolean result = userService.updateQuota(userQuotaUpdateRequest.getId(), userQuotaUpdateRequest.getQuota());
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新额度失败");
         return ResultUtils.success(true);
     }
 

@@ -90,4 +90,28 @@ public interface UserService extends IService<User> {
      * @return 加密后的用户密码
      */
     String getEncryptPassword(String userPassword);
+
+    /**
+     * 扣减一次生成额度
+     *
+     * @param userId 用户 id
+     * @return 是否扣减成功，false 表示额度已用完
+     */
+    boolean tryDeductQuota(Long userId);
+
+    /**
+     * 退回一次生成额度（生成失败时补偿）
+     *
+     * @param userId 用户 id
+     */
+    void refundQuota(Long userId);
+
+    /**
+     * 设置用户剩余额度（管理员操作）
+     *
+     * @param userId 用户 id
+     * @param quota  剩余额度
+     * @return 是否更新成功
+     */
+    boolean updateQuota(Long userId, Integer quota);
 }

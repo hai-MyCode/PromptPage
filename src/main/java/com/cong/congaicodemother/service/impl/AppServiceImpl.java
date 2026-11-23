@@ -96,19 +96,26 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "应用代码生成类型错误");
         }
-        // 5. 在调用 AI 前，先保存用户消息到数据库中
+        // 5. 扣减额度（每个账号的生成次数，原子扣减，额度不足直接拦截）
+        boolean deducted = userService.tryDeductQuota(loginUser.getId());
+        ThrowUtils.throwIf(!deducted, ErrorCode.QUOTA_EXCEEDED, "本账号的生成额度已用完，请联系管理员充值");
+        // 6. 在调用 AI 前，先保存用户消息到数据库中
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-        // 6. 设置监控上下文（用户 ID 和应用 ID）
+        // 7. 设置监控上下文（用户 ID 和应用 ID）
         MonitorContextHolder.setContext(
                 MonitorContext.builder()
                         .userId(loginUser.getId().toString())
                         .appId(appId.toString())
                         .build()
         );
-        // 7. 调用 AI 生成代码（流式）
+        // 8. 调用 AI 生成代码（流式）
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-        // 8. 收集 AI 响应的内容，并且在完成后保存记录到对话历史
+        // 9. 收集 AI 响应的内容，并且在完成后保存记录到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+                .doOnError(error -> {
+                    // 生成失败时把额度退回，避免用户白扣
+                    userService.refundQuota(loginUser.getId());
+                })
                 .doFinally(signalType -> {
                     // 流结束时清理（无论成功/失败/取消）
                     MonitorContextHolder.clearContext();

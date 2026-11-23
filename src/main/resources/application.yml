@@ -6,12 +6,15 @@ spring:
     store-type: redis
     # session 30 天过期
     timeout: 2592000
+    # 独立的 session 命名空间，避免与同一 Redis 中其他项目互相覆盖
+    redis:
+      namespace: cong-ai-code:session
   # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/cong_ai_code
     username: root
-    password: 123456
+    password: 236215
   # redis
   data:
     redis:
@@ -29,6 +32,8 @@ server:
     # cookie 30 天过期
     session:
       cookie:
+        # 自定义 cookie 名，避免 localhost 下多个项目的 SESSION 互相串用
+        name: CONG_AI_SESSION
         max-age: 2592000
 # springdoc-openapi
 springdoc:

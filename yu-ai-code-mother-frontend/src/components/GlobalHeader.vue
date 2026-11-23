@@ -27,6 +27,9 @@
               <a-space>
                 <a-avatar :src="loginUserStore.loginUser.userAvatar" />
                 {{ loginUserStore.loginUser.userName ?? '无名' }}
+                <a-tag color="orange" style="margin-right: 0">
+                  额度 {{ loginUserStore.loginUser.quota ?? 0 }}
+                </a-tag>
               </a-space>
               <template #overlay>
                 <a-menu>
