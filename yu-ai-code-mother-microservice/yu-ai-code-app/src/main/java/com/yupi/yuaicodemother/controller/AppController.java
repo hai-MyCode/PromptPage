@@ -15,7 +15,6 @@ import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.exception.ThrowUtils;
 import com.yupi.yuaicodemother.innerservice.InnerUserService;
-import com.yupi.yuaicodemother.model.dto.app.*;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.model.vo.AppVO;
 import com.yupi.yuaicodemother.ratelimter.annotation.RateLimit;
