@@ -17,8 +17,6 @@ import lombok.NoArgsConstructor;
 
 /**
  * 对话历史 实体类。
- *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
  */
 @Data
 @Builder

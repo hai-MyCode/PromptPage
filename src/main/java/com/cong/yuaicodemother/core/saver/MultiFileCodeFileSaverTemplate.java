@@ -8,8 +8,6 @@ import com.cong.yuaicodemother.model.enums.CodeGenTypeEnum;
 
 /**
  * 多文件代码保存器
- *
- * @author yupi
  */
 public class MultiFileCodeFileSaverTemplate extends CodeFileSaverTemplate<MultiFileCodeResult> {
 
