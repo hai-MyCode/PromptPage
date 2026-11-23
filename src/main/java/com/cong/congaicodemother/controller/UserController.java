@@ -11,7 +11,7 @@ import com.cong.congaicodemother.constant.UserConstant;
 import com.cong.congaicodemother.exception.BusinessException;
 import com.cong.congaicodemother.exception.ErrorCode;
 import com.cong.congaicodemother.exception.ThrowUtils;
-import com.yupi.yuaicodemother.model.dto.user.*;
+import com.cong.congaicodemother.model.dto.user.*;
 import com.cong.congaicodemother.model.vo.LoginUserVO;
 import com.cong.congaicodemother.model.vo.UserVO;
 import jakarta.annotation.Resource;
@@ -29,7 +29,6 @@ import java.util.List;
 /**
  * 用户 控制层。
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
  */
 @RestController
 @RequestMapping("/user")

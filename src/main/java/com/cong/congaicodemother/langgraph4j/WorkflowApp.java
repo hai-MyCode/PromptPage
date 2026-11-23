@@ -1,7 +1,7 @@
 package com.cong.congaicodemother.langgraph4j;
 
 import com.cong.congaicodemother.langgraph4j.node.*;
-import com.yupi.yuaicodemother.langgraph4j.node.*;
+import com.cong.congaicodemother.langgraph4j.node.*;
 import com.cong.congaicodemother.langgraph4j.state.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.CompiledGraph;
@@ -43,7 +43,7 @@ public class WorkflowApp {
 
         // 初始化 WorkflowContext - 只设置基本信息
         WorkflowContext initialContext = WorkflowContext.builder()
-                .originalPrompt("创建一个鱼皮的个人博客网站")
+                .originalPrompt("创建一个个人博客网站")
                 .currentStep("初始化")
                 .build();
         log.info("初始输入: {}", initialContext.getOriginalPrompt());

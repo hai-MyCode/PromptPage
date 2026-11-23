@@ -1,6 +1,6 @@
 spring:
   application:
-    name: yu-ai-code-mother-backend
+    name: cong-ai-code-mother-backend
   # session 配置
   session:
     store-type: redis
@@ -9,7 +9,7 @@ spring:
   # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/yu_ai_code_mother
+    url: jdbc:mysql://localhost:3306/cong_ai_code
     username: root
     password: 123456
   # redis
@@ -35,7 +35,7 @@ springdoc:
   group-configs:
     - group: 'default'
       paths-to-match: '/**'
-      packages-to-scan: com.yupi.yuaicodemother.controller
+      packages-to-scan: com.cong.congaicodemother.controller
 # knife4j
 knife4j:
   enable: true

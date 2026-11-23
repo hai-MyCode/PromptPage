@@ -15,7 +15,7 @@ import com.cong.congaicodemother.constant.UserConstant;
 import com.cong.congaicodemother.exception.BusinessException;
 import com.cong.congaicodemother.exception.ErrorCode;
 import com.cong.congaicodemother.exception.ThrowUtils;
-import com.yupi.yuaicodemother.model.dto.app.*;
+import com.cong.congaicodemother.model.dto.app.*;
 import com.cong.congaicodemother.model.entity.User;
 import com.cong.congaicodemother.model.vo.AppVO;
 import com.cong.congaicodemother.ratelimter.annotation.RateLimit;
@@ -42,7 +42,6 @@ import java.util.Map;
 /**
  * 应用 控制层。
  *
- * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
  */
 @RestController
 @RequestMapping("/app")

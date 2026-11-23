@@ -3,7 +3,6 @@ package com.cong.congaicodemother.core.parser;
 /**
  * 代码解析器策略接口
  * 
- * @author yupi
  */
 public interface CodeParser<T> {
 

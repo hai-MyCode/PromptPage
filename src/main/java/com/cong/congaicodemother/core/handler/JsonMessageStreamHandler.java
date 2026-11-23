@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.cong.congaicodemother.ai.model.message.*;
-import com.yupi.yuaicodemother.ai.model.message.*;
+import com.cong.congaicodemother.ai.model.message.*;
 import com.cong.congaicodemother.ai.tools.BaseTool;
 import com.cong.congaicodemother.ai.tools.ToolManager;
 import com.cong.congaicodemother.model.entity.User;
