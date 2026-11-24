@@ -1,117 +1,81 @@
 <template>
-  <a-layout-header class="header">
-    <a-row :wrap="false">
-      <!-- 左侧：Logo和标题 -->
-      <a-col flex="200px">
-        <RouterLink to="/">
-          <div class="header-left">
-            <img class="logo" src="@/assets/logo.jpg" alt="Logo" />
-            <h1 class="site-title">AI 应用生成</h1>
-          </div>
+  <header class="site-header">
+    <div class="header-inner">
+      <!-- Logo -->
+      <RouterLink to="/" class="brand">
+        <img class="logo" src="@/assets/logo.jpg" alt="Logo" />
+        <span class="site-title">AI 应用生成</span>
+      </RouterLink>
+
+      <!-- 导航 -->
+      <nav class="nav">
+        <RouterLink
+          v-for="item in navItems"
+          :key="item.path"
+          :to="item.path"
+          class="nav-link"
+          :class="{ 'is-active': isActive(item.path) }"
+        >
+          {{ item.label }}
         </RouterLink>
-      </a-col>
-      <!-- 中间：导航菜单 -->
-      <a-col flex="auto">
-        <a-menu
-          v-model:selectedKeys="selectedKeys"
-          mode="horizontal"
-          :items="menuItems"
-          @click="handleMenuClick"
-        />
-      </a-col>
-      <!-- 右侧：用户操作区域 -->
-      <a-col>
-        <div class="user-login-status">
-          <div v-if="loginUserStore.loginUser.id">
-            <a-dropdown>
-              <a-space>
-                <a-avatar :src="loginUserStore.loginUser.userAvatar" />
-                {{ loginUserStore.loginUser.userName ?? '无名' }}
-                <a-tag color="orange" style="margin-right: 0">
-                  额度 {{ loginUserStore.loginUser.quota ?? 0 }}
-                </a-tag>
-              </a-space>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item @click="doLogout">
-                    <LogoutOutlined />
-                    退出登录
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </div>
-          <div v-else>
-            <a-button type="primary" href="/user/login">登录</a-button>
-          </div>
-        </div>
-      </a-col>
-    </a-row>
-  </a-layout-header>
+      </nav>
+
+      <!-- 用户区 -->
+      <div class="header-right">
+        <template v-if="loginUserStore.loginUser.id">
+          <span class="quota-pill">额度 {{ loginUserStore.loginUser.quota ?? 0 }}</span>
+
+          <a-dropdown placement="bottomRight">
+            <button class="user-btn" type="button">
+              <a-avatar :size="28" :src="loginUserStore.loginUser.userAvatar" />
+              <span class="user-name">{{ loginUserStore.loginUser.userName ?? '无名' }}</span>
+            </button>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item key="logout" @click="doLogout">
+                  <LogoutOutlined />
+                  <span class="logout-text">退出登录</span>
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+        </template>
+
+        <RouterLink v-else to="/user/login">
+          <a-button type="primary" size="small" class="login-btn">登录</a-button>
+        </RouterLink>
+      </div>
+    </div>
+  </header>
 </template>
 
 <script setup lang="ts">
-import { computed, h, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { type MenuProps, message } from 'ant-design-vue'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { userLogout } from '@/api/userController.ts'
-import { LogoutOutlined, HomeOutlined } from '@ant-design/icons-vue'
+import { LogoutOutlined } from '@ant-design/icons-vue'
 
 const loginUserStore = useLoginUserStore()
 const router = useRouter()
-// 当前选中菜单
-const selectedKeys = ref<string[]>(['/'])
-// 监听路由变化，更新当前选中菜单
-router.afterEach((to, from, next) => {
-  selectedKeys.value = [to.path]
+const route = useRoute()
+
+// 导航项：管理页面仅管理员可见
+const navItems = computed(() => {
+  const items = [{ path: '/', label: '主页' }]
+  if (loginUserStore.loginUser.userRole === 'admin') {
+    items.push({ path: '/admin/userManage', label: '用户管理' })
+    items.push({ path: '/admin/appManage', label: '应用管理' })
+  }
+  return items
 })
 
-// 菜单配置项
-const originItems = [
-  {
-    key: '/',
-    icon: () => h(HomeOutlined),
-    label: '主页',
-    title: '主页',
-  },
-  {
-    key: '/admin/userManage',
-    label: '用户管理',
-    title: '用户管理',
-  },
-  {
-    key: '/admin/appManage',
-    label: '应用管理',
-    title: '应用管理',
-  },
-]
-
-// 过滤菜单项
-const filterMenus = (menus = [] as MenuProps['items']) => {
-  return menus?.filter((menu) => {
-    const menuKey = menu?.key as string
-    if (menuKey?.startsWith('/admin')) {
-      const loginUser = loginUserStore.loginUser
-      if (!loginUser || loginUser.userRole !== 'admin') {
-        return false
-      }
-    }
-    return true
-  })
-}
-
-// 展示在菜单的路由数组
-const menuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
-
-// 处理菜单点击
-const handleMenuClick: MenuProps['onClick'] = (e) => {
-  const key = e.key as string
-  selectedKeys.value = [key]
-  // 跳转到对应页面
-  if (key.startsWith('/')) {
-    router.push(key)
+const isActive = (path: string) => {
+  if (path === '/') {
+    return route.path === '/'
   }
+  return route.path.startsWith(path)
 }
 
 // 退出登录
@@ -130,81 +94,161 @@ const doLogout = async () => {
 </script>
 
 <style scoped>
-.header {
+.site-header {
   position: sticky;
   top: 0;
   z-index: 100;
   height: 64px;
-  line-height: 64px;
-  padding: 0 24px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
 }
 
-.header :deep(.ant-row) {
-  max-width: 1240px;
-  margin: 0 auto;
-  align-items: center;
-}
-
-.header-left {
+.header-inner {
   display: flex;
   align-items: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Logo */
+.brand {
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+  color: inherit;
 }
 
 .logo {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 9px;
   object-fit: cover;
   box-shadow: var(--shadow-xs);
 }
 
 .site-title {
-  margin: 0;
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text);
+  white-space: nowrap;
 }
 
-.header :deep(.ant-menu-horizontal) {
-  border-bottom: none;
-  background: transparent;
-  line-height: 62px;
-}
-
-.header :deep(.ant-menu-item) {
-  border-radius: 999px;
-  margin-inline: 2px;
-}
-
-.header :deep(.ant-menu-item-selected) {
-  background: var(--brand-soft) !important;
-  color: var(--brand-1) !important;
-}
-
-.header :deep(.ant-menu-item-selected)::after {
-  display: none !important;
-}
-
-.user-login-status {
+/* 导航 */
+.nav {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
-.user-login-status :deep(.ant-avatar) {
-  border: 1px solid var(--border);
+.nav-link {
+  position: relative;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
 }
 
-.user-login-status :deep(.ant-tag) {
-  font-size: 12px;
-  margin-inline-end: 0;
-  background: var(--brand-soft);
-  border-color: rgba(91, 91, 214, 0.18);
+.nav-link:hover {
+  color: var(--text);
+  background: #f4f5fa;
+}
+
+.nav-link.is-active {
   color: var(--brand-1);
+  background: var(--brand-soft);
+  font-weight: 600;
+}
+
+/* 右侧 */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.quota-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  border: 1px solid rgba(91, 91, 214, 0.16);
+  color: var(--brand-1);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px 3px 3px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.user-btn:hover {
+  background: #f7f8fc;
+  border-color: var(--border);
+}
+
+.user-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+
+.login-btn {
+  height: 32px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.logout-text {
+  margin-left: 6px;
+}
+
+@media (max-width: 860px) {
+  .header-inner {
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .site-title,
+  .quota-pill,
+  .user-name {
+    display: none;
+  }
+
+  .nav {
+    justify-content: flex-end;
+  }
 }
 </style>
