@@ -57,6 +57,18 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Value("${code.deploy-host:http://localhost}")
     private String deployHost;
 
+    /**
+     * 路由模型最大尝试次数（含首次）
+     */
+    @Value("${app.routing.max-attempts:3}")
+    private int routingMaxAttempts;
+
+    /**
+     * 路由重试基础间隔（毫秒），第 n 次等待 delay * n
+     */
+    @Value("${app.routing.retry-delay-ms:2000}")
+    private long routingRetryDelayMs;
+
     @Resource
     private UserService userService;
 
@@ -133,15 +145,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 使用 AI 智能选择代码生成类型（多例模式）
-        // 路由只是辅助能力：模型限流/不可用时不能阻塞创建应用，降级为本地规则
+        // 使用 AI 智能选择代码生成类型（千问）
+        // 路由只是辅助能力：限流/不可用时重试几次，仍失败则降级为本地规则，不能阻塞创建应用
         CodeGenTypeEnum selectedCodeGenType;
         try {
-            AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
-            selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
-            if (selectedCodeGenType == null) {
-                throw new BusinessException(ErrorCode.OPERATION_ERROR, "路由结果为空");
-            }
+            selectedCodeGenType = routeCodeGenTypeWithRetry(initPrompt);
         } catch (Exception e) {
             log.warn("AI 路由失败，使用兜底规则：{}", e.getMessage());
             selectedCodeGenType = fallbackCodeGenType(initPrompt);
@@ -166,6 +174,42 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             return CodeGenTypeEnum.MULTI_FILE;
         }
         return CodeGenTypeEnum.HTML;
+    }
+
+    /**
+     * 调用千问做代码生成类型路由，遇到 429 限流时按 2s、4s 退避重试
+     */
+    private CodeGenTypeEnum routeCodeGenTypeWithRetry(String initPrompt) {
+        AiCodeGenTypeRoutingService routingService =
+                aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
+        int attempts = Math.max(1, routingMaxAttempts);
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= attempts; attempt++) {
+            try {
+                CodeGenTypeEnum type = routingService.routeCodeGenType(initPrompt);
+                if (type != null) {
+                    return type;
+                }
+                log.warn("千问路由返回为空（第 {}/{} 次）", attempt, attempts);
+            } catch (Exception e) {
+                lastError = e;
+                log.warn("千问路由调用失败（第 {}/{} 次）：{}", attempt, attempts, e.getMessage());
+                if (attempt < attempts) {
+                    sleepQuietly(routingRetryDelayMs * attempt);
+                }
+            }
+        }
+        throw lastError == null
+                ? new BusinessException(ErrorCode.OPERATION_ERROR, "路由结果为空")
+                : new BusinessException(ErrorCode.OPERATION_ERROR, "路由失败：" + lastError.getMessage());
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override

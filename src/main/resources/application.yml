@@ -76,12 +76,11 @@ langchain4j:
       log-requests: true
       log-responses: true
     # 智能路由 AI 模型配置（用于简单的分类任务）
-    # 注意：路由只是做一次分类，用便宜的对话模型即可；
-    # 之前用 DashScope 的 qwen-turbo，免费档很容易触发 429 限流，导致创建应用失败。
+    # 使用千问（DashScope 兼容模式）；免费档容易 429，代码里已加重试 + 本地兜底
     routing-chat-model:
-      base-url: https://api.deepseek.com
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api-key: <Your API Key>
-      model-name: deepseek-chat
+      model-name: qwen-turbo
       max-tokens: 100
       log-requests: true
       log-responses: true
