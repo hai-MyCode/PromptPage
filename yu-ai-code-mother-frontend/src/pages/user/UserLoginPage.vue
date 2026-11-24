@@ -1,7 +1,9 @@
 <template>
-  <div id="userLoginPage">
-    <h2 class="title">AI 应用生成 - 用户登录</h2>
-    <div class="desc">不写一行代码，生成完整应用</div>
+  <div class="auth-page">
+    <div id="userLoginPage">
+      <div class="auth-brand"><span class="brand-dot"></span>AI 应用生成</div>
+      <h2 class="title">欢迎回来</h2>
+      <div class="desc">登录后继续用一句话构建你的网站</div>
     <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">
       <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
         <a-input v-model:value="formState.userAccount" placeholder="请输入账号" />
@@ -23,6 +25,7 @@
         <a-button type="primary" html-type="submit" style="width: 100%">登录</a-button>
       </a-form-item>
     </a-form>
+    </div>
   </div>
 </template>
 <script lang="ts" setup>
@@ -61,28 +64,103 @@ const handleSubmit = async (values: any) => {
 </script>
 
 <style scoped>
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  padding: 40px 20px 72px;
+  background:
+    radial-gradient(720px 420px at 15% 0%, rgba(91, 91, 214, 0.12), transparent 70%),
+    radial-gradient(680px 420px at 85% 8%, rgba(139, 92, 246, 0.12), transparent 70%),
+    var(--bg);
+}
+
 #userLoginPage {
-  background: white;
-  max-width: 720px;
-  padding: 24px;
-  margin: 24px auto;
+  width: 100%;
+  max-width: 430px;
+  padding: 38px 36px 30px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-1);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.brand-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-1);
 }
 
 .title {
-  text-align: center;
-  margin-bottom: 16px;
+  margin: 18px 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .desc {
-  text-align: center;
-  color: #bbb;
-  margin-bottom: 16px;
+  margin-bottom: 26px;
+  color: var(--text-3);
+  font-size: 13.5px;
 }
 
 .tips {
+  margin: 2px 0 18px;
   text-align: right;
-  color: #bbb;
+  color: var(--text-3);
   font-size: 13px;
-  margin-bottom: 16px;
+}
+
+.tips a {
+  color: var(--brand-1);
+  font-weight: 500;
+}
+
+:deep(.ant-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.ant-input),
+:deep(.ant-input-affix-wrapper) {
+  height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+:deep(.ant-input-affix-wrapper .ant-input) {
+  height: auto;
+}
+
+:deep(.ant-form-item .ant-btn) {
+  height: 44px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  background: var(--brand-gradient);
+}
+
+:deep(.ant-form-item .ant-btn:hover) {
+  opacity: 0.94;
+}
+
+@media (max-width: 480px) {
+  #userLoginPage {
+    padding: 28px 22px 22px;
+    border-radius: var(--radius-lg);
+  }
 }
 </style>

@@ -276,9 +276,9 @@ onMounted(() => {
 
 <style scoped>
 #appEditPage {
-  padding: 24px;
-  max-width: 1000px;
+  max-width: 1080px;
   margin: 0 auto;
+  padding: 28px 24px 64px;
 }
 
 .page-header {
@@ -290,12 +290,14 @@ onMounted(() => {
 
 .page-header h1 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
-.edit-container {
-  border-radius: 8px;
+.edit-container :deep(.ant-card) {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 .cover-preview {

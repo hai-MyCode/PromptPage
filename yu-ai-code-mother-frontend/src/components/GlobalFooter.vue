@@ -1,6 +1,7 @@
 <template>
   <a-layout-footer class="footer">
     <div class="footer-content">
+      <p class="copyright">AI 应用生成平台 · 仅供学习交流</p>
     </div>
   </a-layout-footer>
 </template>
@@ -11,17 +12,16 @@
 
 <style scoped>
 .footer {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  padding: 26px 24px;
+  margin-top: 24px;
+  background: transparent;
+  border-top: 1px solid var(--border);
   text-align: center;
-  padding: 20px;
-  margin-top: 40px;
-  border-top: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .copyright {
   margin: 0;
-  color: #666;
-  font-size: 14px;
+  color: var(--text-3);
+  font-size: 13px;
 }
 </style>

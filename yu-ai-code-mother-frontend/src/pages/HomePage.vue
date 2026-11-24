@@ -161,8 +161,14 @@ onMounted(() => {
     <div class="container">
       <!-- 网站标题和描述 -->
       <div class="hero-section">
-        <h1 class="hero-title">AI 应用生成平台</h1>
-        <p class="hero-description">一句话轻松创建网站应用</p>
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          AI 驱动 · 一句话生成完整网站
+        </div>
+        <h1 class="hero-title">把想法，<span class="gradient-text">变成网站</span></h1>
+        <p class="hero-description">
+          描述你想要的页面，AI 自动完成设计、编码与部署，从灵感到上线只需要几分钟
+        </p>
       </div>
 
       <!-- 用户提示词输入框 -->
@@ -180,6 +186,9 @@ onMounted(() => {
               <span>↑</span>
             </template>
           </a-button>
+        </div>
+        <div class="input-hint">
+          支持 HTML 单页、多文件与 Vue 工程三种产出 · Enter 直达
         </div>
       </div>
 
@@ -225,7 +234,12 @@ onMounted(() => {
 
       <!-- 我的作品 -->
       <div class="section">
-        <h2 class="section-title">我的作品</h2>
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">我的作品</h2>
+            <p class="section-sub">你创建过的应用，随时继续对话或再次部署</p>
+          </div>
+        </div>
         <div class="app-grid">
           <AppCard
             v-for="app in myApps"
@@ -249,7 +263,12 @@ onMounted(() => {
 
       <!-- 精选案例 -->
       <div class="section">
-        <h2 class="section-title">精选案例</h2>
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">精选案例</h2>
+            <p class="section-sub">看看别人用一句话做出了什么</p>
+          </div>
+        </div>
         <div class="featured-grid">
           <AppCard
             v-for="app in featuredApps"
@@ -277,300 +296,256 @@ onMounted(() => {
 
 <style scoped>
 #homePage {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  background:
-    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 8%, #e2e8f0 20%, #cbd5e1 100%),
-    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
   position: relative;
+  min-height: 100vh;
+  padding-bottom: 20px;
   overflow: hidden;
+  background:
+    radial-gradient(900px 520px at 10% -10%, rgba(91, 91, 214, 0.14), transparent 70%),
+    radial-gradient(820px 480px at 92% 0%, rgba(139, 92, 246, 0.14), transparent 70%),
+    radial-gradient(700px 520px at 50% 112%, rgba(16, 185, 129, 0.08), transparent 70%),
+    var(--bg);
 }
 
-/* 科技感网格背景 */
+/* 极淡的网格底纹 */
 #homePage::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px),
-    linear-gradient(rgba(139, 92, 246, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
-  background-size:
-    100px 100px,
-    100px 100px,
-    20px 20px,
-    20px 20px;
+  inset: 0;
   pointer-events: none;
-  animation: gridFloat 20s ease-in-out infinite;
+  background-image:
+    linear-gradient(rgba(28, 31, 43, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 31, 43, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at 50% 0%, #000 0%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle at 50% 0%, #000 0%, transparent 72%);
 }
 
-/* 动态光效 */
+/* 鼠标跟随光晕 */
 #homePage::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    radial-gradient(
-      600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-      rgba(59, 130, 246, 0.08) 0%,
-      rgba(139, 92, 246, 0.06) 40%,
-      transparent 80%
-    ),
-    linear-gradient(45deg, transparent 30%, rgba(59, 130, 246, 0.04) 50%, transparent 70%),
-    linear-gradient(-45deg, transparent 30%, rgba(139, 92, 246, 0.04) 50%, transparent 70%);
+  inset: 0;
   pointer-events: none;
-  animation: lightPulse 8s ease-in-out infinite alternate;
-}
-
-@keyframes gridFloat {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(5px, 5px);
-  }
-}
-
-@keyframes lightPulse {
-  0% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 0.7;
-  }
+  background: radial-gradient(
+    620px circle at var(--mouse-x, 50%) var(--mouse-y, 20%),
+    rgba(91, 91, 214, 0.08),
+    transparent 65%
+  );
+  transition: background 0.2s ease;
 }
 
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
   position: relative;
-  z-index: 2;
+  z-index: 1;
   width: 100%;
-  box-sizing: border-box;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px 72px;
 }
 
-/* 移除居中光束效果 */
-
-/* 英雄区域 */
+/* ---------- Hero ---------- */
 .hero-section {
+  padding: 84px 0 36px;
   text-align: center;
-  padding: 80px 0 60px;
-  margin-bottom: 28px;
-  color: #1e293b;
-  position: relative;
-  overflow: hidden;
 }
 
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    radial-gradient(ellipse 800px 400px at center, rgba(59, 130, 246, 0.12) 0%, transparent 70%),
-    linear-gradient(45deg, transparent 30%, rgba(139, 92, 246, 0.05) 50%, transparent 70%),
-    linear-gradient(-45deg, transparent 30%, rgba(16, 185, 129, 0.04) 50%, transparent 70%);
-  animation: heroGlow 10s ease-in-out infinite alternate;
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+  backdrop-filter: blur(12px);
+  color: var(--text-2);
+  font-size: 13px;
 }
 
-@keyframes heroGlow {
-  0% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
-}
-
-@keyframes rotate {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
+.hero-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
 }
 
 .hero-title {
-  font-size: 56px;
-  font-weight: 700;
-  margin: 0 0 20px;
-  line-height: 1.2;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #10b981 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -1px;
-  position: relative;
-  z-index: 2;
-  animation: titleShimmer 3s ease-in-out infinite;
-}
-
-@keyframes titleShimmer {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
+  margin: 22px 0 16px;
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .hero-description {
-  font-size: 20px;
-  margin: 0;
-  opacity: 0.8;
-  color: #64748b;
-  position: relative;
-  z-index: 2;
+  max-width: 620px;
+  margin: 0 auto;
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: var(--text-2);
 }
 
-/* 输入区域 */
+/* ---------- 输入区 ---------- */
 .input-section {
   position: relative;
-  margin: 0 auto 24px;
-  max-width: 800px;
+  max-width: 820px;
+  margin: 36px auto 0;
 }
 
 .prompt-input {
-  border-radius: 16px;
-  border: none;
-  font-size: 16px;
-  padding: 20px 60px 20px 20px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  padding: 22px 68px 22px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+  resize: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.prompt-input::placeholder {
+  color: var(--text-3);
+}
+
+.prompt-input:hover {
+  border-color: var(--border-strong);
 }
 
 .prompt-input:focus {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
+  outline: none;
+  border-color: rgba(91, 91, 214, 0.55);
+  box-shadow:
+    0 0 0 4px rgba(91, 91, 214, 0.1),
+    var(--shadow);
 }
 
 .input-actions {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+  right: 14px;
+  bottom: 18px;
 }
 
-/* 快捷按钮 */
+.input-actions :deep(.ant-btn) {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--brand-gradient);
+  border: none;
+  color: #fff;
+  box-shadow: 0 10px 24px -12px rgba(91, 91, 214, 0.9);
+}
+
+.input-hint {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* ---------- 快捷模板 ---------- */
 .quick-actions {
   display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 60px;
   flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 22px 0 64px;
 }
 
-.quick-actions .ant-btn {
-  border-radius: 25px;
-  padding: 8px 20px;
-  height: auto;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  color: #475569;
-  backdrop-filter: blur(15px);
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
+.quick-actions :deep(.ant-btn) {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  box-shadow: var(--shadow-xs);
 }
 
-.quick-actions .ant-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-  transition: left 0.5s;
+.quick-actions :deep(.ant-btn:hover) {
+  color: var(--brand-1);
+  border-color: rgba(91, 91, 214, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -16px rgba(91, 91, 214, 0.8);
 }
 
-.quick-actions .ant-btn:hover::before {
-  left: 100%;
-}
-
-.quick-actions .ant-btn:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #3b82f6;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
-}
-
-/* 区域标题 */
+/* ---------- 作品列表 ---------- */
 .section {
-  margin-bottom: 60px;
+  margin-bottom: 56px;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
 }
 
 .section-title {
-  font-size: 32px;
-  font-weight: 600;
-  margin-bottom: 32px;
-  color: #1e293b;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
 }
 
-/* 我的作品网格 */
-.app-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
+.section-sub {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--text-3);
 }
 
-/* 精选案例网格 */
+.app-grid,
 .featured-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
 }
 
-/* 分页 */
 .pagination-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 32px;
+  margin-top: 28px;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .hero-section {
+    padding: 56px 0 24px;
+  }
+
   .hero-title {
-    font-size: 32px;
+    font-size: 36px;
   }
 
   .hero-description {
-    font-size: 16px;
+    font-size: 15px;
+  }
+
+  .input-section {
+    margin-top: 28px;
+  }
+
+  .quick-actions {
+    margin-bottom: 48px;
   }
 
   .app-grid,
   .featured-grid {
     grid-template-columns: 1fr;
-  }
-
-  .quick-actions {
-    justify-content: center;
   }
 }
 </style>

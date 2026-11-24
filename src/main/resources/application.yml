@@ -6,12 +6,15 @@ spring:
     store-type: redis
     # session 30 天过期
     timeout: 2592000
+    # 独立的 session 命名空间，避免与同一 Redis 中其他项目互相覆盖
+    redis:
+      namespace: cong-ai-code:session
   # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/cong_ai_code
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    username: root
+    password: 236215
   # redis
   data:
     redis:
@@ -29,13 +32,15 @@ server:
     # cookie 30 天过期
     session:
       cookie:
+        # 自定义 cookie 名，避免 localhost 下多个项目的 SESSION 互相串用
+        name: CONG_AI_SESSION
         max-age: 2592000
 # springdoc-openapi
 springdoc:
   group-configs:
     - group: 'default'
       paths-to-match: '/**'
-      packages-to-scan: com.cong.yuaicodemother.controller
+      packages-to-scan: com.cong.congaicodemother.controller
 # knife4j
 knife4j:
   enable: true
@@ -74,8 +79,8 @@ langchain4j:
     routing-chat-model:
       base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
       api-key: <Your API Key>
-      model-name: qwen3.7-plus
-      max-tokens: 512
+      model-name: qwen-turbo
+      max-tokens: 100
       log-requests: true
       log-responses: true
 # 添加 COS 对象存储配置（需要从腾讯云获取）
@@ -93,11 +98,6 @@ pexels:
 dashscope:
   api-key: <Your API Key>
   image-model: wan2.2-t2i-flash
-# 日志编码，避免 Windows GBK 控制台出现中文乱码
-logging:
-  charset:
-    console: UTF-8
-    file: UTF-8
 # 监控
 management:
   endpoints:

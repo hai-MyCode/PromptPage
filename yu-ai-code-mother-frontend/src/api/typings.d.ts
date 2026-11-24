@@ -175,6 +175,7 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+    quota?: number
     createTime?: string
     updateTime?: string
   }
@@ -220,6 +221,7 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+    quota?: number
     editTime?: string
     createTime?: string
     updateTime?: string
@@ -232,6 +234,12 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+    quota?: number
+  }
+
+  type UserQuotaUpdateRequest = {
+    id?: number
+    quota?: number
   }
 
   type UserLoginRequest = {
@@ -272,6 +280,7 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+    quota?: number
     createTime?: string
   }
 }

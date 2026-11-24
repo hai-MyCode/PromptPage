@@ -1,4 +1,4 @@
-package com.cong.yuaicodemother;
+package com.yupi.yuaicodemother;
 
 import dev.langchain4j.community.store.embedding.redis.spring.RedisEmbeddingStoreAutoConfiguration;
 import org.apache.dubbo.config.spring.context.annotation.EnableDubbo;
@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 
 @SpringBootApplication(exclude = {RedisEmbeddingStoreAutoConfiguration.class})
-@MapperScan("com.cong.yuaicodemother.mapper")
+@MapperScan("com.yupi.yuaicodemother.mapper")
 @EnableDubbo
 @EnableCaching
 public class YuAiCodeAppApplication {
