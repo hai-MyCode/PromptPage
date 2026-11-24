@@ -60,7 +60,9 @@ cos:
 # 阿里云 DashScope 配置
 dashscope:
   api-key: <your-api-key>
-  image-model: wan2.2-t2i-flash
+  image-base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  image-models: qwen-image-3.0-pro,qwen-image-3.0
+  image-size: 1024*1024
 # Pexels 图片搜索配置
 pexels:
   api-key: <your-api-key>

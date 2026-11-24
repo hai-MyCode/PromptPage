@@ -1,65 +1,68 @@
 package com.cong.congaicodemother.langgraph4j.tools;
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesis;
-import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesisParam;
-import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesisResult;
 import com.cong.congaicodemother.langgraph4j.model.ImageResource;
 import com.cong.congaicodemother.langgraph4j.model.enums.ImageCategoryEnum;
+import com.cong.congaicodemother.manager.DashScopeImageClient;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Logo 图片生成工具
+ * <p>
+ * 使用 DashScope 的 qwen-image 系列模型，按配置顺序尝试，
+ * 前一个模型额度用完或调用失败时自动切换下一个。
  */
 @Slf4j
 @Component
 public class LogoGeneratorTool {
 
-    @Value("${dashscope.api-key:}")
-    private String dashScopeApiKey;
+    @Resource
+    private DashScopeImageClient dashScopeImageClient;
 
-    @Value("${dashscope.image-model:wan2.2-t2i-flash}")
-    private String imageModel;
+    /**
+     * 逗号分隔的模型列表，按顺序降级
+     */
+    @Value("${dashscope.image-models:qwen-image-3.0-pro,qwen-image-3.0}")
+    private String imageModels;
 
     @Tool("根据描述生成 Logo 设计图片，用于网站品牌标识")
     public List<ImageResource> generateLogos(@P("Logo 设计描述，如名称、行业、风格等，尽量详细") String description) {
         List<ImageResource> logoList = new ArrayList<>();
-        try {
-            // 构建 Logo 设计提示词
-            String logoPrompt = String.format("生成 Logo，Logo 中禁止包含任何文字！Logo 介绍：%s", description);
-            ImageSynthesisParam param = ImageSynthesisParam.builder()
-                    .apiKey(dashScopeApiKey)
-                    .model(imageModel)
-                    .prompt(logoPrompt)
-                    .size("512*512")
-                    .n(1) // 生成 1 张足够，因为 AI 不知道哪张最好
-                    .build();
-            ImageSynthesis imageSynthesis = new ImageSynthesis();
-            ImageSynthesisResult result = imageSynthesis.call(param);
-            if (result != null && result.getOutput() != null && result.getOutput().getResults() != null) {
-                List<Map<String, String>> results = result.getOutput().getResults();
-                for (Map<String, String> imageResult : results) {
-                    String imageUrl = imageResult.get("url");
-                    if (StrUtil.isNotBlank(imageUrl)) {
-                        logoList.add(ImageResource.builder()
-                                .category(ImageCategoryEnum.LOGO)
-                                .description(description)
-                                .url(imageUrl)
-                                .build());
-                    }
-                }
+        // Logo 中禁止出现文字，避免模型乱造字母
+        String logoPrompt = String.format("生成 Logo，Logo 中禁止包含任何文字！Logo 介绍：%s", description);
+
+        List<String> models = StrUtil.split(imageModels, ',');
+        for (String item : models) {
+            String model = StrUtil.trim(item);
+            if (StrUtil.isBlank(model)) {
+                continue;
             }
-        } catch (Exception e) {
-            log.error("生成 Logo 失败: {}", e.getMessage(), e);
+            try {
+                String imageUrl = dashScopeImageClient.generate(model, logoPrompt);
+                if (StrUtil.isBlank(imageUrl)) {
+                    continue;
+                }
+                logoList.add(ImageResource.builder()
+                        .category(ImageCategoryEnum.LOGO)
+                        .description(description)
+                        .url(imageUrl)
+                        .build());
+                log.info("Logo 生成成功，使用模型：{}", model);
+                return logoList;
+            } catch (Exception e) {
+                // 额度不足、模型不可用等，继续尝试下一个模型
+                log.warn("模型 {} 生成 Logo 失败，尝试下一个：{}", model, e.getMessage());
+            }
         }
+        log.error("所有图片模型均生成失败，已配置模型：{}", imageModels);
         return logoList;
     }
 }
