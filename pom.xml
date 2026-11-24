@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.cong</groupId>
-    <artifactId>cong-ai-code-mother</artifactId>
+    <artifactId>cong-prompt-page</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>cong-ai-code-mother</name>
-    <description>cong-ai-code-mother</description>
+    <name>cong-prompt-page</name>
+    <description>cong-prompt-page</description>
     <url/>
     <licenses>
         <license/>
