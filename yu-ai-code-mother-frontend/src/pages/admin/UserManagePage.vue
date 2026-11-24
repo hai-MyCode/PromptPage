@@ -218,8 +218,12 @@ const doUpdateQuota = async () => {
 
 <style scoped>
 #userManagePage {
+  max-width: 1240px;
+  margin: 24px auto 64px;
   padding: 24px;
-  background: white;
-  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 </style>

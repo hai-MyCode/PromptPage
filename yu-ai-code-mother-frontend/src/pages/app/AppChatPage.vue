@@ -3,6 +3,11 @@
     <!-- 顶部栏 -->
     <div class="header-bar">
       <div class="header-left">
+        <a-button type="text" class="back-btn" title="返回首页" @click="router.push('/')">
+          <template #icon>
+            <ArrowLeftOutlined />
+          </template>
+        </a-button>
         <h1 class="app-name">{{ appInfo?.appName || '网站生成器' }}</h1>
         <a-tag v-if="appInfo?.codeGenType" color="blue" class="code-gen-type-tag">
           {{ formatCodeGenType(appInfo.codeGenType) }}
@@ -143,50 +148,74 @@
               </a-button>
             </div>
           </div>
+          <div class="composer-hint">
+            <span>Enter 发送 · 可开启可视化编辑，点选预览中的元素精准修改</span>
+            <span v-if="selectedElementInfo" class="composer-selected">
+              已选中 {{ selectedElementInfo.tagName.toLowerCase() }}
+            </span>
+          </div>
         </div>
       </div>
       <!-- 右侧网页展示区域 -->
       <div class="preview-section">
         <div class="preview-header">
-          <h3>生成后的网页展示</h3>
+          <div class="preview-heading">
+            <span class="preview-title">实时预览</span>
+            <span
+                class="preview-status"
+                :class="{ 'is-live': previewUrl && !isGenerating, 'is-loading': isGenerating }"
+            >
+              <i class="status-dot"></i>
+              {{ isGenerating ? '生成中' : previewUrl ? '已就绪' : '待生成' }}
+            </span>
+          </div>
           <div class="preview-actions">
             <a-button
                 v-if="isOwner && previewUrl"
-                type="link"
-                :danger="isEditMode"
+                size="small"
+                :type="isEditMode ? 'primary' : 'default'"
                 @click="toggleEditMode"
                 :class="{ 'edit-mode-active': isEditMode }"
-                style="padding: 0; height: auto; margin-right: 12px"
             >
               <template #icon>
                 <EditOutlined />
               </template>
-              {{ isEditMode ? '退出编辑' : '编辑模式' }}
+              {{ isEditMode ? '退出编辑' : '可视化编辑' }}
             </a-button>
-            <a-button v-if="previewUrl" type="link" @click="openInNewTab">
+            <a-button v-if="previewUrl" size="small" type="text" @click="openInNewTab">
               <template #icon>
                 <ExportOutlined />
               </template>
-              新窗口打开
+              新窗口
             </a-button>
           </div>
         </div>
-        <div class="preview-content">
-          <div v-if="!previewUrl && !isGenerating" class="preview-placeholder">
-            <div class="placeholder-icon">🌐</div>
-            <p>网站文件生成完成后将在这里展示</p>
+
+        <!-- 仿浏览器窗口 -->
+        <div class="preview-window">
+          <div class="browser-bar">
+            <span class="browser-dots"><i></i><i></i><i></i></span>
+            <span class="browser-url">{{ previewUrl || '预览将在生成完成后出现在这里' }}</span>
           </div>
-          <div v-else-if="isGenerating" class="preview-loading">
-            <a-spin size="large" />
-            <p>正在生成网站...</p>
+          <div class="preview-content">
+            <div v-if="!previewUrl && !isGenerating" class="preview-placeholder">
+              <div class="placeholder-icon">🌐</div>
+              <p>网站文件生成完成后将在这里展示</p>
+              <span class="placeholder-hint">AI 完成后会自动构建并刷新预览</span>
+            </div>
+            <div v-else-if="isGenerating" class="preview-loading">
+              <a-spin size="large" />
+              <p>正在生成网站...</p>
+              <span class="placeholder-hint">生成完成后会自动构建并刷新</span>
+            </div>
+            <iframe
+                v-else
+                :src="previewUrl"
+                class="preview-iframe"
+                frameborder="0"
+                @load="onIframeLoad"
+            ></iframe>
           </div>
-          <iframe
-              v-else
-              :src="previewUrl"
-              class="preview-iframe"
-              frameborder="0"
-              @load="onIframeLoad"
-          ></iframe>
         </div>
       </div>
     </div>
@@ -237,6 +266,7 @@ import {
   InfoCircleOutlined,
   DownloadOutlined,
   EditOutlined,
+  ArrowLeftOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -775,220 +805,478 @@ onUnmounted(() => {
 
 <style scoped>
 #appChatPage {
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  background: #fdfdfd;
+  gap: 14px;
+  height: calc(100vh - 64px);
+  padding: 18px 22px 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(760px 420px at 0% 0%, rgba(91, 91, 214, 0.08), transparent 70%),
+    radial-gradient(720px 420px at 100% 0%, rgba(139, 92, 246, 0.08), transparent 70%),
+    var(--bg);
 }
 
-/* 顶部栏 */
+/* ---------- 顶部栏 ---------- */
 .header-bar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
 }
 
-.code-gen-type-tag {
-  font-size: 12px;
+.back-btn {
+  color: var(--text-3);
+  border-radius: var(--radius-xs);
+}
+
+.back-btn:hover {
+  color: var(--brand-1) !important;
+  background: var(--brand-soft) !important;
 }
 
 .app-name {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-size: 17px;
+  font-weight: 650;
+  color: var(--text);
+  max-width: 460px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.code-gen-type-tag {
+  font-size: 12px;
+  border-radius: 999px;
 }
 
 .header-right {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-/* 主要内容区域 */
+/* ---------- 主体 ---------- */
 .main-content {
+  display: flex;
   flex: 1;
-  display: flex;
   gap: 16px;
-  padding: 8px;
-  overflow: hidden;
+  min-height: 0;
 }
 
-/* 左侧对话区域 */
 .chat-section {
-  flex: 2;
   display: flex;
+  flex: 0 0 44%;
+  max-width: 580px;
   flex-direction: column;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
 
+.preview-section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+/* ---------- 消息列表 ---------- */
 .messages-container {
-  flex: 0.9;
-  padding: 16px;
+  flex: 1;
+  padding: 20px 18px;
   overflow-y: auto;
   scroll-behavior: smooth;
+  background: linear-gradient(180deg, #fcfcff 0%, #ffffff 40%);
 }
 
 .message-item {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.message-item:last-child {
+  margin-bottom: 4px;
 }
 
 .user-message {
   display: flex;
-  justify-content: flex-end;
   align-items: flex-start;
+  justify-content: flex-end;
   gap: 8px;
 }
 
 .ai-message {
   display: flex;
-  justify-content: flex-start;
   align-items: flex-start;
+  justify-content: flex-start;
   gap: 8px;
 }
 
 .message-content {
-  max-width: 70%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  line-height: 1.5;
-  word-wrap: break-word;
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: break-word;
 }
 
 .user-message .message-content {
-  background: #1890ff;
-  color: white;
+  background: var(--brand-gradient);
+  color: #fff;
+  border-top-right-radius: 5px;
+  box-shadow: 0 12px 26px -18px rgba(91, 91, 214, 0.95);
 }
 
 .ai-message .message-content {
-  background: #f5f5f5;
-  color: #1a1a1a;
-  padding: 8px 12px;
+  background: #f7f8fc;
+  color: var(--text);
+  border: 1px solid #eef0f7;
+  border-top-left-radius: 5px;
 }
 
 .message-avatar {
   flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .loading-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #666;
+  color: var(--text-3);
+  font-size: 13px;
 }
 
-/* 加载更多按钮 */
+/* 加载更多 */
 .load-more-container {
+  margin-bottom: 14px;
+  padding: 4px 0;
   text-align: center;
-  padding: 8px 0;
-  margin-bottom: 16px;
 }
 
-/* 输入区域 */
+/* ---------- 输入区 ---------- */
 .input-container {
-  padding: 16px;
-  background: white;
+  padding: 12px 16px 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 
 .input-wrapper {
   position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.input-wrapper .ant-input {
-  padding-right: 50px;
+.input-wrapper:focus-within {
+  border-color: rgba(91, 91, 214, 0.5);
+  box-shadow: 0 0 0 4px rgba(91, 91, 214, 0.08);
+}
+
+.input-wrapper :deep(textarea.ant-input) {
+  padding: 12px 54px 12px 14px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+  line-height: 1.7;
+  resize: none;
 }
 
 .input-actions {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  right: 10px;
+  bottom: 10px;
 }
 
-/* 右侧预览区域 */
-.preview-section {
-  flex: 3;
+.input-actions :deep(.ant-btn) {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 10px 22px -14px rgba(91, 91, 214, 0.95);
+}
+
+.composer-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.composer-selected {
+  color: var(--brand-1);
+  font-weight: 500;
+}
+
+/* ---------- 选中元素提示 ---------- */
+.selected-element-alert {
+  margin: 0 16px 12px;
+  border: 1px solid rgba(91, 91, 214, 0.22);
+  border-radius: var(--radius);
+  background: var(--brand-soft);
+}
+
+.selected-element-alert :deep(.ant-alert-message) {
+  color: var(--text);
+}
+
+.selected-element-info {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.element-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.element-tag {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-1);
+}
+
+.element-id,
+.element-class {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.element-details {
   display: flex;
   flex-direction: column;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text-2);
 }
 
+.element-selector-code {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: #d6336c;
+}
+
+/* ---------- 预览区 ---------- */
 .preview-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #e8e8e8;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
-.preview-header h3 {
-  margin: 0;
-  font-size: 16px;
+.preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-title {
+  font-size: 14px;
   font-weight: 600;
+  color: var(--text);
+}
+
+.preview-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #f4f5fa;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+.preview-status.is-live {
+  background: rgba(16, 185, 129, 0.1);
+  color: #0f9d76;
+}
+
+.preview-status.is-loading {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
 }
 
 .preview-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.preview-content {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
+.edit-mode-active {
+  box-shadow: 0 0 0 3px rgba(91, 91, 214, 0.16);
 }
 
-.preview-placeholder {
+/* 仿浏览器窗口 */
+.preview-window {
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
+  padding: 10px;
+  background: #f2f3f8;
+}
+
+.browser-bar {
+  display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+.browser-dots {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.browser-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e6e8f0;
+}
+
+.browser-dots i:nth-child(1) {
+  background: #ffd7d5;
+}
+
+.browser-dots i:nth-child(2) {
+  background: #ffe9c7;
+}
+
+.browser-dots i:nth-child(3) {
+  background: #d3f5e3;
+}
+
+.browser-url {
+  flex: 1;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #f7f8fc;
+  color: var(--text-3);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-content {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 0 0 12px 12px;
+}
+
+.preview-iframe {
+  display: block;
+  width: 100%;
   height: 100%;
-  color: #666;
+  border: none;
+  background: #fff;
 }
 
-.placeholder-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
+.preview-placeholder,
 .preview-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   height: 100%;
-  color: #666;
+  color: var(--text-3);
+  text-align: center;
 }
 
-.preview-loading p {
-  margin-top: 16px;
+.placeholder-icon {
+  margin-bottom: 4px;
+  font-size: 44px;
+  opacity: 0.85;
 }
 
-.preview-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
+.placeholder-hint {
+  font-size: 12.5px;
+  color: var(--text-3);
+  opacity: 0.85;
 }
 
-.selected-element-alert {
-  margin: 0 16px;
+/* ---------- 响应式 ---------- */
+@media (max-width: 1180px) {
+  .chat-section {
+    flex-basis: 46%;
+  }
 }
 
-/* 响应式设计 */
 @media (max-width: 1024px) {
+  #appChatPage {
+    height: auto;
+    min-height: calc(100vh - 64px);
+    overflow: visible;
+  }
+
   .main-content {
     flex-direction: column;
   }
@@ -996,91 +1284,36 @@ onUnmounted(() => {
   .chat-section,
   .preview-section {
     flex: none;
-    height: 50vh;
+    max-width: none;
+    height: 52vh;
   }
 }
 
 @media (max-width: 768px) {
+  #appChatPage {
+    padding: 12px;
+    gap: 10px;
+  }
+
   .header-bar {
-    padding: 12px 16px;
+    padding: 8px 12px;
   }
 
   .app-name {
-    font-size: 16px;
-  }
-
-  .main-content {
-    padding: 8px;
-    gap: 8px;
+    font-size: 15px;
+    max-width: 160px;
   }
 
   .message-content {
-    max-width: 85%;
+    max-width: 86%;
   }
 
-  /* 选中元素信息样式 */
-  .selected-element-alert {
-    margin: 0 16px;
+  .composer-hint {
+    display: none;
   }
 
-  .selected-element-info {
-    line-height: 1.4;
-  }
-
-  .element-header {
-    margin-bottom: 8px;
-  }
-
-  .element-details {
-    margin-top: 8px;
-  }
-
-  .element-item {
-    margin-bottom: 4px;
-    font-size: 13px;
-  }
-
-  .element-item:last-child {
-    margin-bottom: 0;
-  }
-
-  .element-tag {
-    font-family: 'Monaco', 'Menlo', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    color: #007bff;
-  }
-
-  .element-id {
-    color: #28a745;
-    margin-left: 4px;
-  }
-
-  .element-class {
-    color: #ffc107;
-    margin-left: 4px;
-  }
-
-  .element-selector-code {
-    font-family: 'Monaco', 'Menlo', monospace;
-    background: #f6f8fa;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-size: 12px;
-    color: #d73a49;
-    border: 1px solid #e1e4e8;
-  }
-
-  /* 编辑模式按钮样式 */
-  .edit-mode-active {
-    background-color: #52c41a !important;
-    border-color: #52c41a !important;
-    color: white !important;
-  }
-
-  .edit-mode-active:hover {
-    background-color: #73d13d !important;
-    border-color: #73d13d !important;
+  .browser-url {
+    font-size: 11px;
   }
 }
 </style>

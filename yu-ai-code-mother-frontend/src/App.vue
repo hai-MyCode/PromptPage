@@ -1,29 +1,27 @@
 <script setup lang="ts">
 import BasicLayout from '@/layouts/BasicLayout.vue'
+
+// Ant Design 主题令牌：与 styles/theme.css 中的设计变量保持一致
+const themeConfig = {
+  token: {
+    colorPrimary: '#5b5bd6',
+    colorInfo: '#5b5bd6',
+    colorSuccess: '#10b981',
+    colorWarning: '#f59e0b',
+    colorError: '#ef4444',
+    borderRadius: 10,
+    borderRadiusLG: 14,
+    fontSize: 14,
+    controlHeight: 38,
+    wireframe: false,
+    fontFamily:
+      "'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Roboto, sans-serif",
+  },
+}
 </script>
 
 <template>
-  <BasicLayout />
+  <a-config-provider :theme="themeConfig">
+    <BasicLayout />
+  </a-config-provider>
 </template>
-
-<style>
-/* 全局样式优化 */
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
-    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-}
-
-html {
-  overflow-x: hidden;
-}
-</style>

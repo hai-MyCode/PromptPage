@@ -62,7 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
-        user.setUserName("无名");
+        user.setUserName("未命名");
         user.setUserRole(UserRoleEnum.USER.getValue());
         // 新用户赠送默认额度
         user.setQuota(UserConstant.DEFAULT_QUOTA);

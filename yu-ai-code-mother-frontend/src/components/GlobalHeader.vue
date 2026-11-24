@@ -5,7 +5,7 @@
       <a-col flex="200px">
         <RouterLink to="/">
           <div class="header-left">
-            <img class="logo" src="@/assets/logo.png" alt="Logo" />
+            <img class="logo" src="@/assets/logo.jpg" alt="Logo" />
             <h1 class="site-title">AI 应用生成</h1>
           </div>
         </RouterLink>
@@ -85,11 +85,6 @@ const originItems = [
     label: '应用管理',
     title: '应用管理',
   },
-  {
-    key: 'others',
-    label: h('a', { href: 'https://www.codefather.cn', target: '_blank' }, '编程导航'),
-    title: '编程导航',
-  },
 ]
 
 // 过滤菜单项
@@ -136,28 +131,80 @@ const doLogout = async () => {
 
 <style scoped>
 .header {
-  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  line-height: 64px;
   padding: 0 24px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header :deep(.ant-row) {
+  max-width: 1240px;
+  margin: 0 auto;
+  align-items: center;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .logo {
-  height: 48px;
-  width: 48px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  object-fit: cover;
+  box-shadow: var(--shadow-xs);
 }
 
 .site-title {
   margin: 0;
-  font-size: 18px;
-  color: #1890ff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
-.ant-menu-horizontal {
-  border-bottom: none !important;
+.header :deep(.ant-menu-horizontal) {
+  border-bottom: none;
+  background: transparent;
+  line-height: 62px;
+}
+
+.header :deep(.ant-menu-item) {
+  border-radius: 999px;
+  margin-inline: 2px;
+}
+
+.header :deep(.ant-menu-item-selected) {
+  background: var(--brand-soft) !important;
+  color: var(--brand-1) !important;
+}
+
+.header :deep(.ant-menu-item-selected)::after {
+  display: none !important;
+}
+
+.user-login-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-login-status :deep(.ant-avatar) {
+  border: 1px solid var(--border);
+}
+
+.user-login-status :deep(.ant-tag) {
+  font-size: 12px;
+  margin-inline-end: 0;
+  background: var(--brand-soft);
+  border-color: rgba(91, 91, 214, 0.18);
+  color: var(--brand-1);
 }
 </style>
