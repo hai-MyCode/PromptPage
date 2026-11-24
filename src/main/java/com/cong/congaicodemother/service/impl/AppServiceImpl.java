@@ -134,14 +134,38 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 使用 AI 智能选择代码生成类型（多例模式）
-        AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
-        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        // 路由只是辅助能力：模型限流/不可用时不能阻塞创建应用，降级为本地规则
+        CodeGenTypeEnum selectedCodeGenType;
+        try {
+            AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
+            selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+            if (selectedCodeGenType == null) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR, "路由结果为空");
+            }
+        } catch (Exception e) {
+            log.warn("AI 路由失败，使用兜底规则：{}", e.getMessage());
+            selectedCodeGenType = fallbackCodeGenType(initPrompt);
+        }
         app.setCodeGenType(selectedCodeGenType.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
         return app.getId();
+    }
+
+    /**
+     * 路由模型不可用时的兜底规则：按需求描述长度粗略判断生成类型
+     */
+    private CodeGenTypeEnum fallbackCodeGenType(String initPrompt) {
+        int length = initPrompt == null ? 0 : initPrompt.length();
+        if (length > 120) {
+            return CodeGenTypeEnum.VUE_PROJECT;
+        }
+        if (length > 40) {
+            return CodeGenTypeEnum.MULTI_FILE;
+        }
+        return CodeGenTypeEnum.HTML;
     }
 
     @Override
