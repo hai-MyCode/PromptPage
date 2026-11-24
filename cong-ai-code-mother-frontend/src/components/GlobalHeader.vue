@@ -27,7 +27,11 @@
 
           <a-dropdown placement="bottomRight">
             <button class="user-btn" type="button">
-              <a-avatar :size="28" :src="loginUserStore.loginUser.userAvatar" />
+              <UserAvatar
+                :size="28"
+                :src="loginUserStore.loginUser.userAvatar"
+                :name="loginUserStore.loginUser.userName"
+              />
               <span class="user-name">{{ loginUserStore.loginUser.userName ?? '无名' }}</span>
             </button>
             <template #overlay>
@@ -56,6 +60,7 @@ import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { userLogout } from '@/api/userController.ts'
 import { LogoutOutlined } from '@ant-design/icons-vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const loginUserStore = useLoginUserStore()
 const router = useRouter()

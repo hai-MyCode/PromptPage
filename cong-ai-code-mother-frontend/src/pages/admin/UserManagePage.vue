@@ -22,7 +22,7 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'userAvatar'">
-          <a-image :src="record.userAvatar" :width="120" />
+          <UserAvatar :size="36" :src="record.userAvatar" :name="record.userName" />
         </template>
         <template v-else-if="column.dataIndex === 'userRole'">
           <div v-if="record.userRole === 'admin'">
@@ -68,6 +68,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { deleteUser, listUserVoByPage, updateUserQuota } from '@/api/userController.ts'
+import UserAvatar from '@/components/UserAvatar.vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 

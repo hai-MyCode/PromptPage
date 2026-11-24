@@ -1,23 +1,34 @@
 <template>
   <div class="user-info">
-    <a-avatar :src="user?.userAvatar" :size="size">
-      {{ user?.userName?.charAt(0) || 'U' }}
-    </a-avatar>
+    <UserAvatar :src="user?.userAvatar" :name="user?.userName" :size="avatarSize" />
     <span v-if="showName" class="user-name">{{ user?.userName || '未知用户' }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import UserAvatar from '@/components/UserAvatar.vue'
+
 interface Props {
   user?: API.UserVO
   size?: number | 'small' | 'default' | 'large'
   showName?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   size: 'default',
   showName: true,
 })
+
+const SIZE_MAP: Record<string, number> = {
+  small: 24,
+  default: 32,
+  large: 40,
+}
+
+const avatarSize = computed(() =>
+  typeof props.size === 'number' ? props.size : (SIZE_MAP[props.size] ?? 32),
+)
 </script>
 
 <style scoped>
@@ -29,6 +40,6 @@ withDefaults(defineProps<Props>(), {
 
 .user-name {
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--text);
 }
 </style>
