@@ -88,6 +88,7 @@ public class AiCodeGeneratorServiceFactory {
      * @return
      */
     private AiCodeGeneratorService createAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
+        // 缓存未命中才会走到这里：新建实例会重新加载对话记忆，成本较高
         log.info("为 appId: {} 创建新的 AI 服务实例", appId);
         // 根据 appId 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory

@@ -38,6 +38,16 @@
           </template>
           部署
         </a-button>
+        <a-button
+          v-if="appInfo?.codeGenType === 'vue_project' && isOwner"
+          @click="autoRepair"
+          :loading="repairing"
+        >
+          <template #icon>
+            <ToolOutlined />
+          </template>
+          自动修复
+        </a-button>
       </div>
     </div>
 
@@ -251,6 +261,7 @@ import {
   getAppVoById,
   deployApp as deployAppApi,
   deleteApp as deleteAppApi,
+  repairApp as repairAppApi,
 } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { CodeGenTypeEnum, formatCodeGenType } from '@/utils/codeGenTypes'
@@ -272,6 +283,7 @@ import {
   DownloadOutlined,
   EditOutlined,
   ArrowLeftOutlined,
+  ToolOutlined,
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -307,6 +319,7 @@ const previewReady = ref(false)
 
 // 部署相关
 const deploying = ref(false)
+const repairing = ref(false)
 const deployModalVisible = ref(false)
 const deployUrl = ref('')
 
@@ -511,6 +524,9 @@ const sendMessage = async () => {
 }
 
 // 生成代码 - 使用 EventSource 处理流式响应
+// 全局只保留一个活动连接，避免重复点击/重连同时跑多个生成任务
+let activeEventSource: EventSource | null = null
+
 const generateCode = async (userMessage: string, aiMessageIndex: number) => {
   let eventSource: EventSource | null = null
   let streamCompleted = false
@@ -527,10 +543,12 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
 
     const url = `${baseURL}/app/chat/gen/code?${params}`
 
-    // 创建 EventSource 连接
+    // 创建 EventSource 连接（先关掉上一个，防止并发生成）
+    activeEventSource?.close()
     eventSource = new EventSource(url, {
       withCredentials: true,
     })
+    activeEventSource = eventSource
 
     let fullContent = ''
 
@@ -598,22 +616,13 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
       }
     })
 
-    // 处理错误
+    // 处理错误：直接关闭连接，禁止 EventSource 自动重连（重连会重新触发一次生成，疯狂消耗 token）
     eventSource.onerror = function () {
-      if (streamCompleted || !isGenerating.value) return
-      // 检查是否是正常的连接关闭
-      if (eventSource?.readyState === EventSource.CONNECTING) {
-        streamCompleted = true
-        isGenerating.value = false
-        eventSource?.close()
-
-        setTimeout(async () => {
-          await fetchAppInfo()
-          updatePreview()
-        }, 1000)
-      } else {
-        handleError(new Error('SSE连接错误'), aiMessageIndex)
-      }
+      if (streamCompleted) return
+      streamCompleted = true
+      isGenerating.value = false
+      eventSource?.close()
+      handleError(new Error('SSE连接错误'), aiMessageIndex)
     }
   } catch (error) {
     console.error('创建 EventSource 失败：', error)
@@ -707,9 +716,37 @@ const deployApp = async () => {
     }
   } catch (error) {
     console.error('部署失败：', error)
-    message.error('部署失败，请重试')
+    message.error('部署失败：构建未通过，可点击「自动修复」让 AI 修复后重试')
   } finally {
     deploying.value = false
+  }
+}
+
+// 自动修复：构建失败时让 AI 读取错误日志并修复，最多两轮
+const autoRepair = async () => {
+  if (!appInfo.value?.id) {
+    message.error('应用不存在')
+    return
+  }
+  repairing.value = true
+  try {
+    const res = await repairAppApi({ appId: appInfo.value.id as unknown as number })
+    if (res.data.code === 0) {
+      if (res.data.data) {
+        message.success('修复成功，正在刷新预览')
+        await fetchAppInfo()
+        updatePreview()
+      } else {
+        message.error('自动修复失败，请查看后端日志中的构建错误')
+      }
+    } else {
+      message.error('自动修复失败：' + res.data.message)
+    }
+  } catch (error) {
+    console.error('自动修复失败：', error)
+    message.error('自动修复失败，请重试')
+  } finally {
+    repairing.value = false
   }
 }
 

@@ -7,11 +7,14 @@ import java.util.regex.Pattern;
 
 /**
  * HTML 单文件代码解析器
+ * <p>
+ * 兼容模型输出被截断（缺少结束 ```）的情况。
  *
  */
 public class HtmlCodeParser implements CodeParser<HtmlCodeResult> {
 
     private static final Pattern HTML_CODE_PATTERN = Pattern.compile("```html\\s*\\n([\\s\\S]*?)```", Pattern.CASE_INSENSITIVE);
+    private static final Pattern HTML_FENCE_PATTERN = Pattern.compile("```html\\s*\\n", Pattern.CASE_INSENSITIVE);
 
     @Override
     public HtmlCodeResult parseCode(String codeContent) {
@@ -37,6 +40,13 @@ public class HtmlCodeParser implements CodeParser<HtmlCodeResult> {
         Matcher matcher = HTML_CODE_PATTERN.matcher(content);
         if (matcher.find()) {
             return matcher.group(1);
+        }
+        // 兼容截断：有开始标记但没有结束 ```
+        Matcher fenceMatcher = HTML_FENCE_PATTERN.matcher(content);
+        if (fenceMatcher.find()) {
+            int start = fenceMatcher.end();
+            int end = content.indexOf("```", start);
+            return end > 0 ? content.substring(start, end) : content.substring(start);
         }
         return null;
     }

@@ -6,6 +6,7 @@ import UserManagePage from '@/pages/admin/UserManagePage.vue'
 import AppManagePage from '@/pages/admin/AppManagePage.vue'
 import AppChatPage from '@/pages/app/AppChatPage.vue'
 import AppEditPage from '@/pages/app/AppEditPage.vue'
+import AppPreviewPage from '@/pages/app/AppPreviewPage.vue'
 import ChatManagePage from "@/pages/admin/ChatManagePage.vue";
 
 const router = createRouter({
@@ -50,6 +51,11 @@ const router = createRouter({
       path: '/app/edit/:id',
       name: '编辑应用',
       component: AppEditPage,
+    },
+    {
+      path: '/app/preview/:id',
+      name: '作品预览',
+      component: AppPreviewPage,
     },
   ],
 })

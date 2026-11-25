@@ -10,6 +10,7 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.cong.congaicodemother.ai.AiCodeGenTypeRoutingService;
 import com.cong.congaicodemother.ai.AiCodeGenTypeRoutingServiceFactory;
 import com.cong.congaicodemother.constant.AppConstant;
+import com.cong.congaicodemother.constant.UserConstant;
 import com.cong.congaicodemother.core.AiCodeGeneratorFacade;
 import com.cong.congaicodemother.core.builder.VueProjectBuilder;
 import com.cong.congaicodemother.core.handler.StreamHandlerExecutor;
@@ -39,11 +40,17 @@ import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +60,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
+
+    /** 正在生成中的应用，防止前端重连/重复点击导致重复调用模型 */
+    private final Set<Long> generatingApps = ConcurrentHashMap.newKeySet();
 
     @Value("${code.deploy-host:http://localhost}")
     private String deployHost;
@@ -108,28 +118,44 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "应用代码生成类型错误");
         }
-        // 5. 扣减额度（每个账号的生成次数，原子扣减，额度不足直接拦截）
+        // 4.5 如果用户只是询问进度/结果，不调用 AI、不写文件、不扣额度，直接返回当前状态
+        if (isStatusQuestion(message)) {
+            String answer = buildStatusAnswer(appId, codeGenTypeEnum);
+            chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+            chatHistoryService.addChatMessage(appId, answer, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+            return Flux.just(answer);
+        }
+        // 5. 同一应用同一时间只允许一个生成任务，防止前端 EventSource 自动重连导致重复调用、重复消耗 token
+        boolean acquired = generatingApps.add(appId);
+        ThrowUtils.throwIf(!acquired, ErrorCode.OPERATION_ERROR, "该应用正在生成中，请稍候再试");
+        // 6. 扣减额度（每个账号的生成次数，原子扣减，额度不足直接拦截）
         boolean deducted = userService.tryDeductQuota(loginUser.getId());
-        ThrowUtils.throwIf(!deducted, ErrorCode.QUOTA_EXCEEDED, "本账号的生成额度已用完，请联系管理员充值");
-        // 6. 在调用 AI 前，先保存用户消息到数据库中
+        if (!deducted) {
+            generatingApps.remove(appId);
+            throw new BusinessException(ErrorCode.QUOTA_EXCEEDED, "本账号的生成额度已用完，请联系管理员充值");
+        }
+        // 7. 在调用 AI 前，先保存用户消息到数据库中
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-        // 7. 设置监控上下文（用户 ID 和应用 ID）
+        // 8. 设置监控上下文（用户 ID 和应用 ID）
         MonitorContextHolder.setContext(
                 MonitorContext.builder()
                         .userId(loginUser.getId().toString())
                         .appId(appId.toString())
                         .build()
         );
-        // 8. 调用 AI 生成代码（流式）
+        // 9. 调用 AI 生成代码（流式）
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-        // 9. 收集 AI 响应的内容，并且在完成后保存记录到对话历史
+        // 10. 收集 AI 响应的内容，并且在完成后保存记录到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+                // 兜底超时：模型长时间无响应时主动结束，避免前端一直转圈
+                .timeout(Duration.ofMinutes(15))
                 .doOnError(error -> {
                     // 生成失败时把额度退回，避免用户白扣
                     userService.refundQuota(loginUser.getId());
                 })
                 .doFinally(signalType -> {
                     // 流结束时清理（无论成功/失败/取消）
+                    generatingApps.remove(appId);
                     MonitorContextHolder.clearContext();
                 });
     }
@@ -277,6 +303,76 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
      * @param appId  应用ID
      * @param appUrl 应用访问URL
      */
+    /**
+     * 从构建输出中提取关键错误信息，并压缩到指定长度以内
+     * （输入护轨限制单条消息不能超过 1000 字）
+     */
+    private String compactBuildError(String output, int maxLength) {
+        if (StrUtil.isBlank(output)) {
+            return "构建失败，但未获取到具体错误，请检查 package.json 和源码。";
+        }
+        StringBuilder keyLines = new StringBuilder();
+        for (String line : output.split("\\R")) {
+            String text = line.trim();
+            if (text.isEmpty() || text.startsWith("at ") || text.startsWith("...")) {
+                continue;
+            }
+            boolean key = text.contains("error") || text.contains("Error")
+                    || text.contains("Unexpected") || text.contains("expected")
+                    || text.startsWith("file:") || text.contains("[vue/compiler-sfc]")
+                    || text.contains("failed") || text.contains("Failed");
+            if (key) {
+                keyLines.append(text).append('\n');
+            }
+        }
+        String summary = keyLines.length() > 0 ? keyLines.toString() : output;
+        if (summary.length() > maxLength) {
+            summary = summary.substring(summary.length() - maxLength);
+        }
+        return summary;
+    }
+
+    @Override
+    public boolean autoRepair(Long appId, User loginUser) {
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        ThrowUtils.throwIf(!isAdmin && !app.getUserId().equals(loginUser.getId()),
+                ErrorCode.NO_AUTH_ERROR, "无权限操作该应用");
+        ThrowUtils.throwIf(!CodeGenTypeEnum.VUE_PROJECT.getValue().equals(app.getCodeGenType()),
+                ErrorCode.PARAMS_ERROR, "只有 Vue 工程模式支持自动修复");
+        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator
+                + CodeGenTypeEnum.VUE_PROJECT.getValue() + "_" + appId;
+        // 先构建一次，失败才进入修复流程
+        VueProjectBuilder.BuildResult result = vueProjectBuilder.buildProjectWithResult(projectPath);
+        if (result.success()) {
+            return true;
+        }
+        // 最多两轮：把构建错误交给模型修复，再重新构建
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            // 注意：输入护轨限制单条消息不超过 1000 字，这里必须压缩错误日志
+            String errorLog = compactBuildError(result.output(), 600);
+            String repairPrompt = "项目构建失败，请修复代码，使其能够通过 npm run build。\n"
+                    + "请先用文件读取工具查看相关文件，只修改必要的文件，不要重写整个项目。\n\n"
+                    + "错误摘要：\n" + errorLog;
+            log.info("开始第 {} 轮自动修复，appId：{}", attempt, appId);
+            try {
+                aiCodeGeneratorFacade.generateAndSaveCodeStream(repairPrompt,
+                                CodeGenTypeEnum.VUE_PROJECT, appId)
+                        .blockLast(Duration.ofMinutes(10));
+            } catch (Exception e) {
+                log.error("自动修复调用失败：{}", e.getMessage(), e);
+            }
+            result = vueProjectBuilder.buildProjectWithResult(projectPath);
+            if (result.success()) {
+                log.info("第 {} 轮自动修复成功，appId：{}", attempt, appId);
+                return true;
+            }
+        }
+        log.error("自动修复失败，appId：{}，最后错误：\n{}", appId, result.output());
+        return false;
+    }
+
     @Override
     public void generateAppScreenshotAsync(Long appId, String appUrl) {
         // 使用虚拟线程并执行
@@ -378,5 +474,56 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 删除应用
         return super.removeById(id);
+    }
+
+    /**
+     * 判断用户消息是否只是在询问进度/结果，而不是要求生成或修改
+     */
+    private boolean isStatusQuestion(String message) {
+        if (StrUtil.isBlank(message) || message.length() > 30) {
+            return false;
+        }
+        String text = message.trim();
+        // 明确要求修改/生成的动作词，命中则仍然走正常的代码生成流程
+        boolean hasAction = StrUtil.containsAny(text,
+                "生成", "修改", "改成", "改一下", "添加", "增加", "加上", "写", "创建", "实现",
+                "优化", "修复", "继续", "重做", "换成", "删除", "调整", "美化", "改");
+        if (hasAction) {
+            return false;
+        }
+        return StrUtil.containsAny(text,
+                "完成", "好了", "进度", "怎么样", "在吗", "为什么", "是什么", "多久", "吗", "呢", "？", "?");
+    }
+
+    /**
+     * 根据磁盘上的文件生成一句项目状态说明（不调用 AI）
+     */
+    private String buildStatusAnswer(Long appId, CodeGenTypeEnum codeGenTypeEnum) {
+        File projectDir = new File(AppConstant.CODE_OUTPUT_ROOT_DIR,
+                codeGenTypeEnum.getValue() + "_" + appId);
+        if (!projectDir.exists()) {
+            return "当前应用还没有生成任何内容，请描述你想要的网站，我来开始创建。";
+        }
+        int[] fileCount = {0};
+        long[] latestModified = {0L};
+        try (var pathStream = Files.walk(projectDir.toPath())) {
+            pathStream.filter(Files::isRegularFile)
+                    .filter(path -> !path.toString().contains("node_modules"))
+                    .filter(path -> !path.toString().contains(File.separator + "dist" + File.separator))
+                    .forEach(path -> {
+                        fileCount[0]++;
+                        latestModified[0] = Math.max(latestModified[0], path.toFile().lastModified());
+                    });
+        } catch (Exception e) {
+            log.warn("统计项目文件失败：{}", e.getMessage());
+        }
+        boolean hasDist = Files.exists(projectDir.toPath().resolve("dist").resolve("index.html"));
+        String latestTime = latestModified[0] == 0
+                ? "未知"
+                : LocalDateTime.ofInstant(Instant.ofEpochMilli(latestModified[0]), ZoneId.systemDefault())
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return String.format(
+                "当前项目共 %d 个源文件，最近一次更新：%s；构建产物：%s。需要继续生成或修改的话，直接说具体要求即可。",
+                fileCount[0], latestTime, hasDist ? "已生成" : "尚未生成");
     }
 }

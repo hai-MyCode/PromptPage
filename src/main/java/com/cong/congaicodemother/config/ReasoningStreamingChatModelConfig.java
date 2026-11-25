@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @ConfigurationProperties(prefix = "langchain4j.open-ai.reasoning-streaming-chat-model")
@@ -48,6 +50,10 @@ public class ReasoningStreamingChatModelConfig {
                 .temperature(temperature)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
+                // 避免服务端返回 Brotli 压缩流（Java 客户端不支持解码）
+                .customHeaders(Map.of("Accept-Encoding", "identity"))
+                // 推理/长文本生成期间可能长时间无数据，读超时给足 10 分钟
+                .timeout(Duration.ofMinutes(10))
                 .listeners(List.of(aiModelMonitorListener))
                 .build();
     }

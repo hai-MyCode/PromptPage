@@ -29,7 +29,7 @@ public interface UserConstant {
     /**
      * 新用户注册时默认赠送的生成额度（次数）
      */
-    Integer DEFAULT_QUOTA = 20;
+    Integer DEFAULT_QUOTA = 3;
 
     // endregion
 }

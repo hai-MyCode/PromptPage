@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
+import java.util.Map;
+
 /**
  * 智能路由模型配置
  */
@@ -44,6 +46,8 @@ public class RoutingAiModelConfig {
                 .temperature(temperature)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
+                // 避免 Brotli 压缩导致解码失败
+                .customHeaders(Map.of("Accept-Encoding", "identity"))
                 .build();
     }
 }

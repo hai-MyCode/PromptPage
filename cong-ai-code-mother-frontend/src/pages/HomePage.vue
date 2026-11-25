@@ -143,6 +143,13 @@ const viewChat = (appId: string | number | undefined) => {
   }
 }
 
+// 精选案例：直接看生成好的作品，不进入对话
+const viewFeatured = (appId: string | number | undefined) => {
+  if (appId) {
+    router.push(`/app/preview/${appId}`)
+  }
+}
+
 // 查看作品
 const viewWork = (app: API.AppVO) => {
   if (app.deployKey) {
@@ -267,7 +274,8 @@ onMounted(() => {
             :key="app.id"
             :app="app"
             :featured="true"
-            @view-chat="viewChat"
+            mode="preview"
+            @view-chat="viewFeatured"
             @view-work="viewWork"
           />
         </div>

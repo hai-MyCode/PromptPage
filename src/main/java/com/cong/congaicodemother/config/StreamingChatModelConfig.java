@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 流式对话模型配置
@@ -51,6 +53,10 @@ public class StreamingChatModelConfig {
                 .temperature(temperature)
                 .logRequests(logRequests)
                 .logResponses(logResponses)
+                // 避免服务端返回 Brotli 压缩流（Java 客户端不支持解码，会报 Brotli stream decoding failed）
+                .customHeaders(Map.of("Accept-Encoding", "identity"))
+                // 长文本生成可能几十秒没有新数据，读超时给足 10 分钟
+                .timeout(Duration.ofMinutes(10))
                 .listeners(List.of(aiModelMonitorListener))
                 .build();
     }

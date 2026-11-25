@@ -11,6 +11,7 @@ import com.cong.congaicodemother.common.BaseResponse;
 import com.cong.congaicodemother.common.DeleteRequest;
 import com.cong.congaicodemother.common.ResultUtils;
 import com.cong.congaicodemother.constant.AppConstant;
+import com.cong.congaicodemother.core.builder.VueProjectBuilder;
 import com.cong.congaicodemother.constant.UserConstant;
 import com.cong.congaicodemother.exception.BusinessException;
 import com.cong.congaicodemother.exception.ErrorCode;
@@ -56,6 +57,26 @@ public class AppController {
     @Resource
     private ProjectDownloadService projectDownloadService;
 
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
+
+    /**
+     * 重新构建应用（生成中断、但文件已经写入磁盘时使用，不会重新调 AI）
+     */
+    @PostMapping("/build")
+    public BaseResponse<Boolean> buildApp(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() == null || deleteRequest.getId() <= 0,
+                ErrorCode.PARAMS_ERROR, "应用 id 错误");
+        User loginUser = userService.getLoginUser(request);
+        App app = appService.getById(deleteRequest.getId());
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        ThrowUtils.throwIf(!isAdmin && !app.getUserId().equals(loginUser.getId()),
+                ErrorCode.NO_AUTH_ERROR, "无权限操作该应用");
+        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + app.getId();
+        return ResultUtils.success(vueProjectBuilder.buildProject(projectPath));
+    }
+
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
@@ -83,7 +104,7 @@ public class AppController {
                             .build();
                 })
                 .onErrorResume(error -> Flux.just(buildBusinessErrorEvent(
-                        ErrorCode.SYSTEM_ERROR.getCode(), "生成失败：" + error.getMessage())))
+                        ErrorCode.SYSTEM_ERROR.getCode(), toFriendlyErrorMessage(error))))
                 .concatWith(Mono.just(
                         // 发送结束事件
                         ServerSentEvent.<String>builder()
@@ -91,6 +112,27 @@ public class AppController {
                                 .data("")
                                 .build()
                 ));
+    }
+
+    /**
+     * 把底层异常翻译成用户能看懂的提示
+     */
+    private String toFriendlyErrorMessage(Throwable error) {
+        String message = error == null ? "" : String.valueOf(error.getMessage());
+        String lower = message.toLowerCase();
+        if (lower.contains("unknownhost") || message.contains("不知道这样的主机")) {
+            return "无法连接 AI 服务：域名解析失败（api.deepseek.com），请检查网络、DNS 或代理设置后重试";
+        }
+        if (lower.contains("timed out") || lower.contains("timeout") || message.contains("超时")) {
+            return "AI 服务响应超时，请稍后重试；如果反复超时，建议新建应用减少上下文";
+        }
+        if (lower.contains("brotli")) {
+            return "AI 服务返回了无法解码的压缩数据，请重试或检查网络代理";
+        }
+        if (lower.contains("connection refused") || message.contains("拒绝")) {
+            return "无法连接 AI 服务：连接被拒绝，请检查网络或代理";
+        }
+        return "生成失败：" + message;
     }
 
     /**
@@ -112,6 +154,18 @@ public class AppController {
      * @param request          请求
      * @return 部署 URL
      */
+    /**
+     * 自动修复 Vue 项目（构建失败时把错误交给 AI 修复，最多两轮）
+     */
+    @PostMapping("/repair")
+    public BaseResponse<Boolean> repairApp(@RequestBody AppDeployRequest appDeployRequest,
+                                          HttpServletRequest request) {
+        ThrowUtils.throwIf(appDeployRequest == null || appDeployRequest.getAppId() == null
+                || appDeployRequest.getAppId() <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(appService.autoRepair(appDeployRequest.getAppId(), loginUser));
+    }
+
     @PostMapping("/deploy")
     public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, HttpServletRequest request) {
         // 检查部署请求是否为空

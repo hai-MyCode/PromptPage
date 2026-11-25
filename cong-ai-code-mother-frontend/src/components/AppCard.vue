@@ -1,5 +1,5 @@
 <template>
-  <div class="app-card" :class="{ 'app-card--featured': featured }">
+  <div class="app-card" :class="{ 'app-card--featured': featured }" @click="handleViewChat">
     <div class="app-preview">
       <img v-if="app.cover" :src="app.cover" :alt="app.appName" />
       <div v-else class="app-placeholder">
@@ -7,8 +7,10 @@
       </div>
       <div class="app-overlay">
         <a-space>
-          <a-button type="primary" @click="handleViewChat">查看对话</a-button>
-          <a-button v-if="app.deployKey" type="default" @click="handleViewWork">查看作品</a-button>
+          <a-button type="primary" @click.stop="handleViewChat">{{ actionLabel }}</a-button>
+          <a-button v-if="app.deployKey" type="default" @click.stop="handleViewWork">
+            查看作品
+          </a-button>
         </a-space>
       </div>
     </div>
@@ -31,11 +33,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 interface Props {
   app: API.AppVO
   featured?: boolean
+  /** chat：点击进入对话；preview：点击进入作品预览 */
+  mode?: 'chat' | 'preview'
 }
 interface Emits {
   (e: 'view-chat', appId: string | number | undefined): void
@@ -44,9 +49,12 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   featured: false,
+  mode: 'chat',
 })
 
 const emit = defineEmits<Emits>()
+
+const actionLabel = computed(() => (props.mode === 'preview' ? '查看作品' : '查看对话'))
 
 const handleViewChat = () => {
   emit('view-chat', props.app.id)
@@ -168,3 +176,9 @@ const handleViewWork = () => {
   text-overflow: ellipsis;
 }
 </style>
+/* 触屏设备没有 hover，直接显示操作按钮 */
+@media (hover: none) {
+  .app-overlay {
+    opacity: 1;
+  }
+}

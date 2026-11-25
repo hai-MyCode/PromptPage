@@ -46,6 +46,15 @@ public interface AppService extends IService<App> {
     String deployApp(Long appId, User loginUser);
 
     /**
+     * 自动修复 Vue 项目：构建失败时把错误日志交给 AI 修复，最多重试 2 轮
+     *
+     * @param appId     应用 ID
+     * @param loginUser 当前登录用户
+     * @return 修复后是否构建成功
+     */
+    boolean autoRepair(Long appId, User loginUser);
+
+    /**
      * 异步生成应用截图并更新封面
      *
      * @param appId  应用ID

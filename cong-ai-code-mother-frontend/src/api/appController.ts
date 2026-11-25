@@ -180,3 +180,28 @@ export async function updateApp(body: API.AppUpdateRequest, options?: { [key: st
     ...(options || {}),
   })
 }
+/** 自动修复 Vue 项目构建错误 POST /app/repair */
+export async function repairApp(body: API.AppDeployRequest, options?: { [key: string]: any }) {
+  return request<API.BaseResponseBoolean>('/app/repair', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    timeout: 900000,
+    ...(options || {}),
+  })
+}
+
+/** 重新构建应用（生成中断时使用，不会重新调用 AI）POST /app/build */
+export async function buildApp(body: API.DeleteRequest, options?: { [key: string]: any }) {
+  return request<API.BaseResponseBoolean>('/app/build', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    timeout: 300000,
+    ...(options || {}),
+  })
+}
